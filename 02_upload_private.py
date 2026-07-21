@@ -166,9 +166,6 @@ def upload_file(driver, file_path: str, screenshot_dir: Path) -> bool:
         logging.warning("업로드 완료 신호 미탐지 - 계속 진행합니다.")
 
     # 7) 닫기 버튼 클릭 (후보 셀렉터 여러 개 시도)
-    # 다이얼로그 우상단 X 버튼: <ytcp-button id="ytcp-uploads-dialog-close-button"><button aria-label="Close">
-    # (2026-07-16 실제 업로드 재현으로 확인. 과거 'close-icon-button'/'#close-button'/'Save and close' 라벨은
-    # 더 이상 존재하지 않아 매번 폴백으로 빠지고 있었음.)
     close_candidates = [
         (By.CSS_SELECTOR, "ytcp-uploads-dialog #ytcp-uploads-dialog-close-button button"),
         (By.XPATH, "//ytcp-uploads-dialog//button[@aria-label='Close' or @aria-label='닫기']"),
@@ -236,8 +233,6 @@ def main(today, am_or_pm):
         driver.get(STUDIO_URL)
 
         # 스튜디오 홈(#create-icon), 로그인 폼(#identifierId), 또는 URL이 이미 studio.youtube.com인지를 함께 확인.
-        # 특정 DOM 요소 하나에만 의존하면 UI 변경/느린 로딩 시 오탐이 나므로 URL 조건도 함께 두고,
-        # 첫 로딩이 느릴 수 있어 대기 시간도 넉넉하게 준다.
         try:
             WebDriverWait(driver, 45).until(
                 lambda d: (
@@ -251,9 +246,6 @@ def main(today, am_or_pm):
             return
 
         if driver.find_elements(By.ID, "identifierId"):
-            # 저장된 세션이 유효해도, 시스템 부하 등으로 스튜디오 리디렉션이 느려지면
-            # 계정 재확인 화면이 잠깐 스쳐 지나가며 identifierId가 일시적으로 잡힐 수 있다.
-            # 진짜 세션 만료인지 구분하기 위해 스튜디오 도달을 잠깐 더 기다려본다.
             logging.warning("로그인 폼이 감지되었습니다. 일시적인 리디렉션인지 재확인 중...")
             try:
                 WebDriverWait(driver, 10).until(

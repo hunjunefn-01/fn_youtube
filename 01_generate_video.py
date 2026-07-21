@@ -28,7 +28,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import chardet
 
-# 경로 설정: 스크립트 파일 위치를 기준으로 작업 디렉터리를 설정 (프로젝트 폴더 이동/이름 변경에 영향받지 않음)
 os.chdir(Path(__file__).resolve().parent)
 
 # Load configuration
@@ -68,7 +67,8 @@ logging.getLogger('moviepy').setLevel(logging.ERROR)
 # API endpoints
 OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
 CLOVA_TTS_URL = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
-SD_API_URL = "http://127.0.0.1:7860//sdapi/v1"  # needs Stable Diffusion installed on the local machine with API enabled
+# needs Stable Diffusion installed on the local machine with API enabled
+SD_API_URL = "http://127.0.0.1:7860//sdapi/v1" 
 
 # Constants and settings
 CANVAS_WIDTH, CANVAS_HEIGHT = 1080, 1920
@@ -204,8 +204,6 @@ def read_csv_single(df):
         return None
 
 def process_full_text(rpt_txt, name):
-    #result = {"summary": "summary", "keywords": [ "keyword1", "keyword2", "keyword3"], "title": "title"}
-    #return result
     
     prompt = (
         "다음 내용은 애널리스트 보고서 내용이야. 이 내용으로 아래 임무들을 수행해. "
@@ -333,7 +331,6 @@ def generate_dialog(text):
         "2. 다른 전문가가 확인했을 때, 보고서에 없는 내용이 포함되지 않도록 해."
         "3. 불일치가 발생하면, 대화를 수정하여 보고서 내용만 반영하도록 해."
 
-        # 대화 분량 수정: 10 -> 6, 문장 분량 수정: (25~28) -> (17~20)
         "- 대화는 총 6문단으로 만들어. analyst와 student가 번갈아 등장하고, analyst가 먼저 말해."
         "- analyst의 문단은 3문장, student의 문단은 1~2문장으로 구성해."
         "- 전체 문장은 17~20문장 정도로 유지해. 필요할 경우 일부 설명을 요약해."
@@ -534,8 +531,8 @@ def create_scene(processed, formatted_date, name, ticker, rpt_id):
     start_arr = np.array(start_color, dtype=np.float64)
     end_arr = np.array(end_color, dtype=np.float64)
     gradient = start_arr * (1 - factors[..., None]) + end_arr * factors[..., None]
-    gradient = gradient.astype(np.uint8).transpose(1, 0, 2)  # (band_height, CANVAS_WIDTH, 3), truncation matches original int()
-    alpha = np.full((band_height, CANVAS_WIDTH, 1), 255, dtype=np.uint8)  # draw.point() with a 3-tuple fill on RGBA defaults to opaque
+    gradient = gradient.astype(np.uint8).transpose(1, 0, 2)
+    alpha = np.full((band_height, CANVAS_WIDTH, 1), 255, dtype=np.uint8)
     band_rgba = np.concatenate([gradient, alpha], axis=2)
 
     scene_array = np.array(scene_img)
@@ -563,8 +560,8 @@ def create_scene(processed, formatted_date, name, ticker, rpt_id):
         title_font_size = FONT_SIZES['TITLE'] - 10
         title_font = ImageFont.truetype(FONT_PATHS['TITLE'], title_font_size)
     title_line_spacing = int(title_font_size / 4)
-    wrapped_title = textwrap.wrap(processed['title'], MAX_TITLE_CHARS) #여러줄로 나누는 것, 공백포함, 단어단위로 잘라서 만든다.
-    height_title = sum(title_font_size + title_line_spacing for line in wrapped_title) - title_line_spacing #wrapped_title에 있는 리스트를 한줄씩 불러와서 더한다. 마지막 라인 스페이싱을 뺀다.
+    wrapped_title = textwrap.wrap(processed['title'], MAX_TITLE_CHARS)
+    height_title = sum(title_font_size + title_line_spacing for line in wrapped_title) - title_line_spacing 
     title_pos_x = PADDING_LEFT
     title_pos_y = int((BANNER_HEIGHT - height_title) / 2) + PADDING_TOP
     for line in wrapped_title:
@@ -715,11 +712,8 @@ def paste_subtitle_to_scene(scene_img, original_paragraph):
 
     return scene_img
 
- #audio = get_tts_from_clova(dialog['speaker'], sentences[i], emotions[i], str(seq) + "-" + str(i), len_dialog, formatted_date, am_or_pm, name, ticker)
 
 def get_tts_from_clova(speaker, text, sentiment, seq, total, formatted_date, am_or_pm, name, ticker):
-
-    #return AudioFileClip('./temp/temp_tts.mp3')
     
     actors = {"analyst": "vdaeseong", "student": "vdain"}
     speaker_speed = {"analyst": "-2", "student": "-3"}
@@ -820,7 +814,7 @@ def break_scene_per_sentence(scene_img, dialog, seq, len_dialog, formatted_date,
             color = colors[sentence_index]
             words = sentence.split()
             for word in words:
-                if len(current_line) + len(word) > max_chars_per_line: # 각 줄이 max_chars_per_line을 넘으면 새로운 줄로 변경하여 lines 리스트에 추가합니다.
+                if len(current_line) + len(word) > max_chars_per_line: 
                     lines.append((current_line, current_color_line))
                     current_line = word + ' '
                     current_color_line = [color] * (len(word) + 1)
@@ -917,12 +911,9 @@ def combine_sentences(paragraphs):
 def read_csv_combined(df, req_rpt_num=2, is_tp_req=False):
     try:
         # Read the CSV file
-        #df = pd.read_csv(csv_file)
-        #logging.info(f"CSV file loaded successfully. Number of rows: {len(df)}")
         
         # Ensure 'STK_CD' is treated as a string, and format it to six digits if it is numeric
         df['STK_CD'] = df['STK_CD'].apply(lambda x: f"{int(x):06d}" if isinstance(x, (int, float)) else str(x))
-        
         
         # Remove rows where 'RPT_TXT' contains 'NULL' or NaN values
         df = df[df['RPT_TXT'].replace('NULL', pd.NA).notna()]
@@ -955,7 +946,6 @@ def read_csv_combined(df, req_rpt_num=2, is_tp_req=False):
         
         # Filter the grouped DataFrame to keep only these stock codes
         df_grouped = df_grouped[df_grouped['STK_CD'].isin(rpt_txt_counts['STK_CD'])]
-        #logging.info(f"Grouped DataFrame after filtering: {df_grouped.shape}")
         
         # Combine report texts for each stock code, ensuring the combination of non-empty texts
         df_combined = df_grouped.groupby('STK_CD').agg({
@@ -968,8 +958,7 @@ def read_csv_combined(df, req_rpt_num=2, is_tp_req=False):
         }).reset_index()
         
         # Merge the combined DataFrame with the report text counts
-        df_combined = df_combined.merge(rpt_txt_counts, on='STK_CD') #보고서 수 정보 병합
-        #logging.info(f"Final combined DataFrame shape: {df_combined.shape}")
+        df_combined = df_combined.merge(rpt_txt_counts, on='STK_CD')
 
         return df_combined
     except Exception as e:
@@ -1000,7 +989,7 @@ def send_email(records, elapsed_time):
         
         msg = MIMEMultipart()
         msg['From'] = from_email
-        msg['To'] = ', '.join(to_emails)  # Ensure this is a string
+        msg['To'] = ', '.join(to_emails)
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
@@ -1178,7 +1167,7 @@ def detect_encoding(file_like):
     """
     Detect the encoding of a file-like object.
     """
-    raw_data = file_like.read(10000)  # Read a small portion of the file to detect encoding
+    raw_data = file_like.read(10000)
     result = chardet.detect(raw_data)
     encoding = result.get('encoding')
     file_like.seek(0)  # Reset the file pointer to the beginning
@@ -1242,7 +1231,6 @@ def process_csv(formatted_date, am_or_pm):
     encoding = detect_encoding(csv_data)
 
     try:
-        #df = pd.read_csv(csv_data, encoding=encoding, delimiter='|', header=None)  # Change delimiter if needed
         df = read_csv_with_fallbacks(csv_data)
         logging.info(f"File read successfully with encoding: {encoding}. Number of columns: {df.shape[1]}")
     except Exception as e:
@@ -1534,10 +1522,6 @@ if __name__ == "__main__":
         formatted_date = datetime.now().strftime("%Y%m%d")
         rpt_mode, am_or_pm = ('single', 'am') if datetime.now().hour < 12 else ('combined', 'pm')
 
-    # DEBUGGING PURPOSE
-    # rpt_mode = 'single'
-    # am_or_pm = 'am'
-
     # 콘솔 로그 외에 무인 배치 실행 후 진단이 가능하도록 파일 로그도 함께 남김
     log_dir = f"./output/{formatted_date}_{am_or_pm}"
     os.makedirs(log_dir, exist_ok=True)
@@ -1550,5 +1534,4 @@ if __name__ == "__main__":
     elapsed_time = datetime.now() - start_time
     logging.info(f"result: {result}")
     logging.info(f"elapsed_time: {elapsed_time}")
-    #send_email(result, elapsed_time)
   
