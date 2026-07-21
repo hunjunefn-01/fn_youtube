@@ -4,7 +4,7 @@ cd /d D:\VENV\Fn_Comp_Shorts_v5
 :: 매뉴얼 옵션으로 수동 실행
 
 :: 첫 번째 Python 스크립트 실행
-.\Scripts\python.exe 01_generate_video.py --manual 20260716 am
+.\Scripts\python.exe 01_generate_video.py --manual 20260716 am --limit 2
 
 :: 10초 대기
 timeout /t 10 /nobreak

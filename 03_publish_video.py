@@ -10,6 +10,7 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 import google.auth.transport.requests
+import google.auth.exceptions
 from google.oauth2.credentials import Credentials
 
 # https://console.cloud.google.com/auth/clients?authuser=1&hl=ko&inv=1&invt=Ab2PqA&project=shorts-438906
@@ -23,29 +24,49 @@ scopes = [
     "https://www.googleapis.com/auth/youtube.readonly"
 ]
 
+def run_login_setup():
+    """최초 1회 또는 refresh_token 만료 시 수동 실행: 브라우저로 직접 로그인해 token.json을 새로 만든다.
+    무인 배치 경로(get_authenticated_service)에서는 이 인터랙티브 플로우를 절대 호출하지 않는다."""
+    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+        'client_secrets.json', scopes)
+    credentials = flow.run_local_server(port=0)
+    with open('token.json', 'w') as token_file:
+        token_file.write(credentials.to_json())
+    logging.info("수동 로그인 완료. token.json이 갱신되었습니다.")
+
+
 def get_authenticated_service():
-    credentials = None
+    """무인 배치 실행용 인증. 저장된 token.json/refresh_token만으로 인증하며,
+    실패 시 브라우저 로그인을 시도하지 않고 RuntimeError로 즉시 실패해 원인을 로그에 남긴다."""
+    if not os.path.exists('token.json'):
+        raise RuntimeError(
+            "token.json이 없습니다. 'python 03_publish_video.py --setup-login'을 먼저 실행해 인증을 완료해주세요."
+        )
 
-    # Delete existing token.json to ensure new authentication
-    #if os.path.exists('token.json'):
-    #    os.remove('token.json')
+    with open('token.json', 'r') as token_file:
+        token_info = json.load(token_file)  # 토큰 제이슨을 받아온다.
+    credentials = Credentials.from_authorized_user_info(token_info, scopes)
+    logging.info(
+        f"token.json 로드 완료. expiry={credentials.expiry}, "
+        f"has_refresh_token={bool(credentials.refresh_token)}"
+    )
 
-    # Check if token.json exists
-    if os.path.exists('token.json'): 
-        with open('token.json', 'r') as token_file:
-            token_info = json.load(token_file) #토큰 제이슨을 받아온다.
-            credentials = Credentials.from_authorized_user_info(token_info, scopes)
-
-    # If there are no valid credentials available, prompt the user to log in.
-    if not credentials or not credentials.valid:
-        if credentials and credentials.expired and credentials.refresh_token:
+    if not credentials.valid:
+        if not credentials.refresh_token:
+            raise RuntimeError(
+                "저장된 토큰에 refresh_token이 없습니다. "
+                "'python 03_publish_video.py --setup-login'을 실행해 재인증해주세요."
+            )
+        try:
             credentials.refresh(google.auth.transport.requests.Request())
-        else:
-            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                'client_secrets.json', scopes)
-            credentials = flow.run_local_server(port=0)
+            logging.info(f"토큰 갱신 성공. 새 expiry={credentials.expiry}")
+        except google.auth.exceptions.RefreshError as e:
+            # 여기서 잡히는 실제 에러 문자열(예: invalid_grant)이 간헐적 재인증 요구의 진짜 원인을 알려준다.
+            raise RuntimeError(
+                f"토큰 갱신 실패, 재인증이 필요합니다: {e} "
+                "-> 'python 03_publish_video.py --setup-login'을 실행해 재인증해주세요."
+            ) from e
 
-        # Save the credentials for the next run
         with open('token.json', 'w') as token_file:
             token_file.write(credentials.to_json())
 
@@ -170,7 +191,11 @@ def extract_name_ticker(filename, is_json=True): #파일이름이나 영상 제�
 
 def main(today, am_or_pm):
     # YouTube API 인증을 위한 서비스 객체 생성
-    youtube = get_authenticated_service()
+    try:
+        youtube = get_authenticated_service()
+    except RuntimeError as e:
+        logging.error(str(e))
+        return
 
     # 인증된 사용자의 채널 ID를 가져옴
     channel_id = get_channel_id(youtube)
@@ -289,21 +314,28 @@ def setup_logging(today, am_or_pm):
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('--setup-login', action='store_true',
+                             help='브라우저로 직접 로그인해 token.json을 (재)생성합니다. 무인 배치 실행에서는 사용하지 않습니다.')
     arg_parser.add_argument('--manual', nargs=2, metavar=('DATE', 'AM_OR_PM'),
                              help="특정 날짜/세션의 dialog 폴더를 수동으로 지정 (예: --manual 20260716 am)")
     cli_args = arg_parser.parse_args()
 
-    if cli_args.manual:
-        manual_date, manual_am_pm = cli_args.manual
-        manual_am_pm = manual_am_pm.lower()
-        if manual_am_pm not in ('am', 'pm'):
-            raise ValueError(f"--manual의 두 번째 값은 'am' 또는 'pm'이어야 합니다: {manual_am_pm}")
-        run_today, run_am_or_pm = manual_date, manual_am_pm
+    if cli_args.setup_login:
+        setup_today, setup_am_or_pm = get_today_paths()
+        setup_logging(setup_today, setup_am_or_pm)
+        run_login_setup()
     else:
-        run_today, run_am_or_pm = get_today_paths()
+        if cli_args.manual:
+            manual_date, manual_am_pm = cli_args.manual
+            manual_am_pm = manual_am_pm.lower()
+            if manual_am_pm not in ('am', 'pm'):
+                raise ValueError(f"--manual의 두 번째 값은 'am' 또는 'pm'이어야 합니다: {manual_am_pm}")
+            run_today, run_am_or_pm = manual_date, manual_am_pm
+        else:
+            run_today, run_am_or_pm = get_today_paths()
 
-    setup_logging(run_today, run_am_or_pm)
-    logging.info("업로드 메타가 실행됩니다.")
-    main(run_today, run_am_or_pm)
+        setup_logging(run_today, run_am_or_pm)
+        logging.info("업로드 메타가 실행됩니다.")
+        main(run_today, run_am_or_pm)
 
 

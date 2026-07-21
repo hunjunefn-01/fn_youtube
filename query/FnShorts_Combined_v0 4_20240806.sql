@@ -40,7 +40,7 @@ DECLARE @curDate DATETIME
 SET @curDate = GETDATE(); -- 종가가 존재하는 가장 최근 영업일이 아닌 실제 '오늘'임
 
 -- 지난 2주간 하루씩 옮겨 가며 고가가 전일종가 대비 n% 이상 높은 적이 있는 종목 찾기
---SELECT TOP 1 @endDate = DT FROM WISE.DBO.TZ_DATE WHERE SVC_WK_END_YN = 1 ORDER BY DT DESC
+-- SELECT TOP 1 @endDate = DT FROM WISE.DBO.TZ_DATE WHERE SVC_WK_END_YN = 1 ORDER BY DT DESC
 SELECT TOP 1 @endDate = TRD_DT FROM WISE.DBO.TS_STK_DATA ORDER BY TRD_DT DESC
 SET @startDate = DATEADD(DAY, -14, @endDate);
 SET @thisDate = @startDate
@@ -113,21 +113,9 @@ WHERE CNS_DT = @endDate AND ITEM_CD IN ('761010000','761010100','761010200','761
 AND TERM_TYP = 1
 GROUP BY CMP_CD 
 
---SELECT TOP 10 * FROM WISE.DBO.TT_CMP_CNS_EXT_DATA3 ORDER BY CNS_DT DESC
-
---SELECT *
---FROM WISE.DBO.TT_CMP_CNS_EXT_DATA3
---WHERE CMP_CD = '006280'
---AND ITEM_CD = '761250000'
---AND TERM_TYP = 1
---AND CNS_DT > '2023-01-01'
---ORDER BY CNS_DT DESC
-
 
 DECLARE @threeMonthsBefore DATE;
 SELECT TOP 1 @threeMonthsBefore = DT FROM WISE.DBO.TZ_DATE WHERE TRADE_YN = '1' AND DT <= DATEADD(month, -3, @endDate) ORDER BY DT DESC
---SELECT @threeMonthsBefore
-
 
 SELECT a.* 
 , c.RECOM_TYP_DT
@@ -157,9 +145,4 @@ FROM #TempTable a
 		on a.STK_CD = d.CMP_CD
 		AND d.ITEM_CD = '761250000'--목표주가(adj)
 		AND d.CNS_DT = @threeMonthsBefore
-
-
-
-
-
 

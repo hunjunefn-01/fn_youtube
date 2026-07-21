@@ -1276,7 +1276,7 @@ def process_csv(formatted_date, am_or_pm):
     return df
 
 
-def main(rpt_mode, formatted_date, high_prc_rtn_filtering):
+def main(rpt_mode, formatted_date, high_prc_rtn_filtering, report_limit=10):
     # Process CSV: split to columns and add column names
     try:
         df = process_csv(formatted_date, am_or_pm)
@@ -1322,8 +1322,8 @@ def main(rpt_mode, formatted_date, high_prc_rtn_filtering):
 
     #num_comps = 1 ### FOR DEBUGGING PURPOSE
     
-    if num_comps > 10:
-        num_comps = 10
+    if num_comps > report_limit:
+        num_comps = report_limit
     
     if csv_data is not None:
         index = 0
@@ -1505,9 +1505,12 @@ if __name__ == "__main__":
                              help='HIGH_PRC_RTN 필터링 임계값 (기본값 0.08)')
     arg_parser.add_argument('--manual', nargs=2, metavar=('DATE', 'AM_OR_PM'),
                              help="특정 날짜/세션의 CSV를 수동으로 지정해서 실행 (예: --manual 20260716 am)")
+    arg_parser.add_argument('--limit', dest='report_limit', type=int, default=10,
+                             help='한 번 실행 시 처리할 리포트(회사) 개수 상한 (기본값 10)')
     cli_args = arg_parser.parse_args()
 
     high_prc_rtn_filtering = cli_args.threshold
+    report_limit = cli_args.report_limit
 
     if cli_args.manual:
         manual_date, manual_am_pm = cli_args.manual
@@ -1530,7 +1533,7 @@ if __name__ == "__main__":
     logging.getLogger().addHandler(file_handler)
 
     start_time = datetime.now()
-    result = main(rpt_mode, formatted_date, high_prc_rtn_filtering)
+    result = main(rpt_mode, formatted_date, high_prc_rtn_filtering, report_limit)
     elapsed_time = datetime.now() - start_time
     logging.info(f"result: {result}")
     logging.info(f"elapsed_time: {elapsed_time}")

@@ -21,3 +21,6 @@ temp/
 
 # Debug screenshots
 error_*.png
+
+# Runtime scratch files (regenerated every run)
+assets/bgm/temp_bgm.mp3

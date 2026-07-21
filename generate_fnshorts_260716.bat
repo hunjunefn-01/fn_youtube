@@ -7,9 +7,8 @@ cd /d D:\VENV\Fn_Comp_Shorts_v5
 D:\VENV\Fn_Comp_Shorts_v5\Scripts\python.exe 01_generate_video.py 0.04
 
 :: 30초 대기
-timeout /t 30 /nobreak
+timeout /t 15 /nobreak
 
-:: 로그인 설정(최초 1회 또는 세션 만료 시): .\Scripts\python.exe 02_upload_private.py --setup-login
 D:\VENV\Fn_Comp_Shorts_v5\Scripts\python.exe 02_upload_private.py
 
 :: 5초 대기
