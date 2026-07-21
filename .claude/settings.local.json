@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./Scripts/python.exe \"C:/Users/fsadmin/AppData/Local/Temp/claude/d--VENV-Fn-Comp-Shorts-v5/3edd15e4-dc1b-40a2-888b-80bfffaf04fe/scratchpad/probe_close_button.py\")"
+    ]
+  }
+}

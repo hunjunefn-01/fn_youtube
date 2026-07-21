@@ -1,0 +1,22 @@
+# D:\VENV\Fn_Comp_Shorts_v1_310\Scripts\python.exe -m pip install -U pip setuptools wheel
+
+# pip install -r requirements.txt
+pandas==2.2.2               # 데이터프레임 처리 및 CSV/Excel 입출력
+numpy==2.0.2                # 수치 연산, 배열 연산
+chardet==5.2.0              # 파일 인코딩 감지
+pillow==11.0.0              # 이미지 처리(PNG/GIF 합성, 폰트 렌더링)
+moviepy==1.0.3              # 영상/오디오 편집 및 합성
+pydub==0.25.1                   # ★ 추가 필요 (AudioSegment 사용)
+navertts==0.3.1                 # (코드에서는 Clova 직접 호출, 대체용이면 유지 가능)
+navertts==0.3.1             # 네이버 TTS(Clova TTS 대체용)
+requests==2.32.3            # HTTP 요청(OpenAI, Clova TTS 호출 등)
+openai==1.42.0              # OpenAI API 호출 (GPT 모델 사용)
+paramiko==3.4.1             # SFTP 파일 전송 (FnGuide 서버 연동)
+selenium==4.24.0            # 웹 자동화(YouTube Studio 업로드)
+webdriver-manager==4.0.2    # 크롬 드라이버 자동 설치/관리
+pyautogui==0.9.54           # 키보드/마우스 자동화(보조 입력)
+google-auth==2.34.0         # Google API 인증
+google-auth-oauthlib==1.2.1 # OAuth 인증 플로우
+google-api-python-client==2.142.0 # YouTube Data API 호출
+
+# pip install -U -r requirements.txt

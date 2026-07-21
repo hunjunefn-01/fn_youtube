@@ -1,0 +1,23 @@
+# Python venv
+Include/
+Lib/
+Scripts/
+pyvenv.cfg
+__pycache__/
+*.pyc
+
+# Secrets / credentials
+config.json
+token.json
+client_secrets.json
+
+# Browser automation profile / driver
+chrome_profile/
+chromedriver-win64/
+
+# Generated / working data
+output/
+temp/
+
+# Debug screenshots
+error_*.png
