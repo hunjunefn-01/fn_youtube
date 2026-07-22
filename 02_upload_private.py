@@ -60,6 +60,15 @@ def build_driver():
     return webdriver.Chrome(service=Service(), options=options)
 
 
+def _at_studio_home(driver):
+    """스튜디오 홈 도달 여부: #create-icon 요소가 있거나, URL이 이미 로그인 화면이 아닌
+    studio.youtube.com인 경우를 스튜디오 도달로 판단한다."""
+    return bool(
+        driver.find_elements(By.CSS_SELECTOR, "#create-icon")
+        or ("studio.youtube.com" in driver.current_url and "accounts.google.com" not in driver.current_url)
+    )
+
+
 def try_return_to_studio(driver, timeout=8):
     """중간 인터스티셜 페이지가 떴을 때 'Return to studio' 처리 (여러 후보 셀렉터 시도)"""
     candidates = [
@@ -219,7 +228,8 @@ def main(today, am_or_pm):
 
     if not Path(CHROME_PROFILE_DIR).exists():
         logging.error(
-            "저장된 로그인 세션이 없습니다. 먼저 'python 02_upload_private.py --setup-login'을 한 번 실행해 로그인을 완료해주세요."
+            "저장된 로그인 세션이 없습니다. "
+            "먼저 'python 02_upload_private.py --setup-login'을 한 번 실행해 로그인을 완료해주세요."
         )
         return
 
@@ -232,14 +242,10 @@ def main(today, am_or_pm):
         driver = build_driver()
         driver.get(STUDIO_URL)
 
-        # 스튜디오 홈(#create-icon), 로그인 폼(#identifierId), 또는 URL이 이미 studio.youtube.com인지를 함께 확인.
+        # 스튜디오 홈 도달 여부(_at_studio_home) 또는 로그인 폼(#identifierId) 등장을 함께 확인.
         try:
             WebDriverWait(driver, 45).until(
-                lambda d: (
-                    d.find_elements(By.CSS_SELECTOR, "#create-icon")
-                    or d.find_elements(By.ID, "identifierId")
-                    or ("studio.youtube.com" in d.current_url and "accounts.google.com" not in d.current_url)
-                )
+                lambda d: _at_studio_home(d) or d.find_elements(By.ID, "identifierId")
             )
         except TimeoutException:
             logging.error("스튜디오 페이지 로딩을 확인하지 못했습니다 (네트워크 상태를 확인해주세요).")
@@ -248,9 +254,7 @@ def main(today, am_or_pm):
         if driver.find_elements(By.ID, "identifierId"):
             logging.warning("로그인 폼이 감지되었습니다. 일시적인 리디렉션인지 재확인 중...")
             try:
-                WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "#create-icon"))
-                )
+                WebDriverWait(driver, 30).until(_at_studio_home)
                 logging.info("일시적인 리디렉션이었습니다. 저장된 세션으로 로그인 계속 진행.")
             except TimeoutException:
                 logging.error(
